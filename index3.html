@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Path | Nitin Chaurasia</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#f8f3ea;
+    --paper:#fbf8f2;
+    --ink:#2b2620;
+    --ink-dim:#7a7164;
+    --line:#e3d9c5;
+    --accent:#a8552f;
+    --accent-soft:#a8552f1f;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    font-weight:300;
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    padding:48px 18px 70px;
+  }
+  h1,h2,h3{font-family:'Fraunces',serif;font-weight:500;color:var(--ink);}
+  a{color:var(--accent);text-decoration:none;}
+  a:hover{text-decoration:underline;}
+
+  .page{width:100%;max-width:1040px;}
+
+  /* TOP BAR */
+  .topbar{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-end;
+    flex-wrap:wrap;
+    gap:18px;
+    margin-bottom:28px;
+  }
+  .back-link{
+    font-size:12px;
+    letter-spacing:2px;
+    text-transform:uppercase;
+    color:var(--ink-dim);
+  }
+  .back-link:hover{color:var(--accent);}
+  .title-block .eyebrow{
+    color:var(--accent);
+    font-size:11.5px;
+    letter-spacing:3px;
+    text-transform:uppercase;
+    margin-bottom:8px;
+    font-weight:500;
+  }
+  .title-block h1{font-size:30px;}
+  .level-box{
+    text-align:right;
+    min-width:180px;
+  }
+  .level-box .lvl-label{
+    font-size:11px;
+    letter-spacing:2px;
+    text-transform:uppercase;
+    color:var(--ink-dim);
+    margin-bottom:6px;
+  }
+  .xp-bar{
+    width:180px;
+    height:6px;
+    border-radius:99px;
+    background:var(--line);
+    overflow:hidden;
+    margin-left:auto;
+  }
+  .xp-fill{
+    height:100%;
+    width:0%;
+    background:var(--accent);
+    transition:width .5s ease;
+  }
+
+  /* GAME FRAME */
+  .game-frame{
+    background:var(--paper);
+    border:1px solid var(--line);
+    border-radius:18px;
+    padding:18px;
+    position:relative;
+  }
+  .viewport{
+    width:100%;
+    overflow-x:auto;
+    overflow-y:hidden;
+    border-radius:12px;
+    -ms-overflow-style:none;
+    scrollbar-width:none;
+  }
+  .viewport::-webkit-scrollbar{display:none;}
+  .world{
+    position:relative;
+    width:1040px;
+    height:360px;
+  }
+  .world svg{position:absolute;top:0;left:0;}
+  .world-path{
+    fill:none;
+    stroke:var(--line);
+    stroke-width:3;
+    stroke-linecap:round;
+    stroke-linejoin:round;
+  }
+  .world-path.progressed{
+    stroke:var(--accent);
+    opacity:0.55;
+  }
+
+  .node{
+    position:absolute;
+    width:16px;height:16px;
+    border-radius:50%;
+    background:var(--paper);
+    border:2px solid var(--ink-dim);
+    transform:translate(-50%,-50%);
+    transition:background .3s, border-color .3s, transform .3s;
+  }
+  .node.visited{
+    background:var(--accent);
+    border-color:var(--accent);
+  }
+  .node.current-range{
+    border-color:var(--accent);
+    box-shadow:0 0 0 6px var(--accent-soft);
+  }
+  .node-label{
+    position:absolute;
+    transform:translate(-50%, 8px);
+    font-size:10.5px;
+    letter-spacing:0.3px;
+    color:var(--ink-dim);
+    text-align:center;
+    width:96px;
+    line-height:1.3;
+    pointer-events:none;
+  }
+  .node-label strong{
+    display:block;
+    color:var(--ink);
+    font-weight:500;
+    font-size:11.5px;
+    font-family:'Fraunces',serif;
+  }
+
+  .interact-hint{
+    position:absolute;
+    transform:translate(-50%,-100%);
+    font-size:11px;
+    color:var(--accent);
+    font-weight:500;
+    letter-spacing:0.5px;
+    white-space:nowrap;
+    animation:bob 1s ease-in-out infinite;
+    pointer-events:none;
+  }
+  @keyframes bob{
+    0%,100%{transform:translate(-50%,-100%);}
+    50%{transform:translate(-50%,-112%);}
+  }
+
+  /* CHARACTER */
+  .character{
+    position:absolute;
+    width:26px;
+    height:38px;
+    transform:translate(-50%,-78%);
+    transition:transform .08s linear;
+    z-index:5;
+  }
+  .character svg{display:block;width:100%;height:100%;}
+  .character.face-left svg{transform:scaleX(-1);}
+  .character .shadow{
+    position:absolute;
+    bottom:-3px;
+    left:50%;
+    width:18px;
+    height:5px;
+    background:#00000014;
+    border-radius:50%;
+    transform:translateX(-50%);
+  }
+  .character.walking{animation:walkbob .32s ease-in-out infinite;}
+  @keyframes walkbob{
+    0%,100%{margin-top:0px;}
+    50%{margin-top:-3px;}
+  }
+
+  /* DIALOGUE BOX */
+  .dialogue{
+    position:absolute;
+    left:18px;right:18px;bottom:18px;
+    background:var(--paper);
+    border:1px solid var(--line);
+    border-top:3px solid var(--accent);
+    border-radius:12px;
+    padding:22px 26px;
+    box-shadow:0 10px 30px #0000000f;
+    transform:translateY(120%);
+    transition:transform .3s ease;
+    max-height:78%;
+    overflow-y:auto;
+  }
+  .dialogue.open{transform:translateY(0);}
+  .dlg-period{
+    font-size:11px;
+    letter-spacing:1.5px;
+    text-transform:uppercase;
+    color:var(--ink-dim);
+    margin-bottom:6px;
+  }
+  .dlg-title{font-size:21px;margin-bottom:2px;}
+  .dlg-org{color:var(--accent);font-size:13.5px;margin-bottom:14px;}
+  .dlg-text{font-size:15px;color:var(--ink);line-height:1.65;margin-bottom:16px;max-width:560px;}
+  .dlg-skill{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    font-size:12px;
+    color:var(--accent);
+    border:1px solid var(--accent);
+    border-radius:999px;
+    padding:5px 14px;
+    margin-bottom:14px;
+  }
+  .dlg-cta{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px;margin-bottom:10px;}
+  .dlg-cta a{
+    border:1px solid var(--accent);
+    border-radius:999px;
+    padding:9px 20px;
+    font-size:13px;
+    color:var(--accent);
+  }
+  .dlg-cta a:hover{background:var(--accent);color:var(--paper);text-decoration:none;}
+  .dlg-close{
+    font-size:11.5px;
+    color:var(--ink-dim);
+    letter-spacing:0.5px;
+  }
+
+  /* CONTROLS HELP / MOBILE */
+  .help-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    flex-wrap:wrap;
+    gap:14px;
+    margin-top:18px;
+  }
+  .help-text{font-size:12.5px;color:var(--ink-dim);letter-spacing:0.2px;}
+  .help-text kbd{
+    background:var(--bg-soft,#f1e9da);
+    border:1px solid var(--line);
+    border-radius:5px;
+    padding:1px 7px;
+    font-family:inherit;
+    font-size:11.5px;
+    color:var(--ink);
+  }
+  .pad{display:flex;gap:8px;}
+  .pad button{
+    width:42px;height:42px;
+    border-radius:50%;
+    border:1px solid var(--line);
+    background:var(--paper);
+    color:var(--ink-dim);
+    font-size:16px;
+    cursor:pointer;
+    transition:all .2s;
+  }
+  .pad button:active, .pad button.active{
+    background:var(--accent);
+    color:var(--paper);
+    border-color:var(--accent);
+  }
+  .pad button.interact{color:var(--accent);border-color:var(--accent);}
+
+  /* INVENTORY */
+  .inventory{margin-top:30px;}
+  .inventory .eyebrow{
+    color:var(--accent);
+    font-size:11px;
+    letter-spacing:2.5px;
+    text-transform:uppercase;
+    margin-bottom:14px;
+  }
+  .inv-tags{display:flex;flex-wrap:wrap;gap:10px;}
+  .inv-tag{
+    border:1px solid var(--line);
+    color:var(--ink-dim);
+    background:var(--paper);
+    font-size:12.5px;
+    padding:7px 16px;
+    border-radius:999px;
+    opacity:0.45;
+    transition:all .4s ease;
+  }
+  .inv-tag.unlocked{
+    opacity:1;
+    border-color:var(--accent);
+    color:var(--accent);
+    background:var(--accent-soft);
+  }
+
+  /* START OVERLAY */
+  .start-overlay{
+    position:absolute;
+    inset:0;
+    background:#fbf8f2ee;
+    border-radius:12px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    flex-direction:column;
+    text-align:center;
+    padding:30px;
+    z-index:20;
+    transition:opacity .4s ease;
+  }
+  .start-overlay h2{font-size:24px;margin-bottom:14px;}
+  .start-overlay p{color:var(--ink-dim);font-size:14.5px;max-width:360px;margin-bottom:24px;line-height:1.6;}
+  .start-btn{
+    border:1px solid var(--accent);
+    background:var(--accent);
+    color:var(--paper);
+    border-radius:999px;
+    padding:12px 30px;
+    font-size:14px;
+    letter-spacing:0.4px;
+    cursor:pointer;
+  }
+  .start-overlay.hidden{opacity:0;pointer-events:none;}
+
+  @media (max-width:640px){
+    .level-box{text-align:left;min-width:0;}
+    .xp-bar{margin-left:0;}
+  }
+</style>
+</head>
+<body>
+
+<div class="page">
+  <div class="topbar">
+    <div class="title-block">
+      <a class="back-link" href="index.html">← Back to portfolio</a>
+      <h1 style="margin-top:10px;">The Path</h1>
+    </div>
+    <div class="level-box">
+      <div class="lvl-label" id="lvlLabel">Level 0 / 9</div>
+      <div class="xp-bar"><div class="xp-fill" id="xpFill"></div></div>
+    </div>
+  </div>
+
+  <div class="game-frame">
+    <div class="start-overlay" id="startOverlay">
+      <div class="eyebrow" style="color:var(--accent);font-size:11px;letter-spacing:3px;text-transform:uppercase;margin-bottom:10px;">A Game</div>
+      <h2>Walk through nine years, one job at a time.</h2>
+      <p>Use <strong>← →</strong> to walk the path. Press <strong>↑</strong> (or tap a stop) to read that chapter. <strong>Esc / ↓</strong> closes it. Collect a skill at every stop.</p>
+      <button class="start-btn" id="startBtn">Begin walking</button>
+    </div>
+
+    <div class="viewport" id="viewport">
+      <div class="world" id="world">
+        <svg width="1040" height="360" viewBox="0 0 1040 360">
+          <path id="basePath" class="world-path" d=""></path>
+          <path id="progressPath" class="world-path progressed" d=""></path>
+        </svg>
+
+        <div id="nodesLayer"></div>
+
+        <div class="interact-hint" id="interactHint" style="display:none;">↑ read</div>
+
+        <div class="character" id="character">
+          <div class="shadow"></div>
+          <svg viewBox="0 0 26 38" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="13" cy="7" r="6" fill="none" stroke="#a8552f" stroke-width="2.2"/>
+            <line x1="13" y1="13" x2="13" y2="27" stroke="#a8552f" stroke-width="2.2" stroke-linecap="round"/>
+            <line x1="13" y1="18" x2="5" y2="14" stroke="#a8552f" stroke-width="2.2" stroke-linecap="round"/>
+            <line x1="13" y1="18" x2="21" y2="14" stroke="#a8552f" stroke-width="2.2" stroke-linecap="round"/>
+            <g class="legs">
+              <line id="legL" x1="13" y1="27" x2="7" y2="37" stroke="#a8552f" stroke-width="2.2" stroke-linecap="round"/>
+              <line id="legR" x1="13" y1="27" x2="19" y2="37" stroke="#a8552f" stroke-width="2.2" stroke-linecap="round"/>
+            </g>
+          </svg>
+        </div>
+
+        <div class="dialogue" id="dialogue">
+          <div class="dlg-period" id="dlgPeriod"></div>
+          <div class="dlg-title" id="dlgTitle"></div>
+          <div class="dlg-org" id="dlgOrg"></div>
+          <div class="dlg-text" id="dlgText"></div>
+          <div class="dlg-skill" id="dlgSkill"></div>
+          <div class="dlg-cta" id="dlgCta" style="display:none;">
+            <a href="mailto:nitinchaurasia701@gmail.com">Email me</a>
+            <a href="https://www.linkedin.com/in/nitinchaurasia-business" target="_blank" rel="noopener">LinkedIn ↗</a>
+          </div>
+          <div class="dlg-close">↓ or Esc to close</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="help-row">
+      <div class="help-text"><kbd>←</kbd> <kbd>→</kbd> walk &nbsp; <kbd>↑</kbd> read &nbsp; <kbd>esc</kbd> close</div>
+      <div class="pad" id="pad">
+        <button id="btnLeft" aria-label="walk left">←</button>
+        <button id="btnInteract" class="interact" aria-label="interact">↑</button>
+        <button id="btnRight" aria-label="walk right">→</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="inventory">
+    <div class="eyebrow">Skills unlocked</div>
+    <div class="inv-tags" id="invTags"></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var stops = [
+    {x:60,  y:300, title:"B.Tech, Mechanical Engineering", org:"NIT Karnataka, Surathkal", period:"2021 – 2025",
+     text:"Every path starts somewhere. Mine started here, ranked in the top 0.8% of over 9.4 lakh JEE Mains candidates. I came in to design things. I left wanting to build them instead.",
+     skill:"Foundations", label:"NITK"},
+    {x:175, y:275, title:"Joint Secretary", org:"Entrepreneurship Cell, NITK", period:"Feb 2022 – Mar 2024",
+     text:"My first real taste of building something from scratch. Organized a flagship event for 1,000+ attendees with an 80-person team, and pushed recruitment and content to 100,000+ impressions.",
+     skill:"Event Ops", label:"E-Cell"},
+    {x:290, y:250, title:"Consultant & Project Manager", org:"180 Degrees Consulting NITK", period:"Feb 2022 – Sep 2024",
+     text:"Clients in the US, Nigeria and India taught me strategy means nothing without execution. Promoted to Project Manager, led 5 consultants, closed every engagement at 100% client satisfaction.",
+     skill:"Strategy Consulting", label:"180DC"},
+    {x:405, y:265, title:"Marketing Intern", org:"FluxGen Sustainable Technologies", period:"Dec 2023 – Jan 2024",
+     text:"A short stint, but a useful one. Talked to 100+ potential clients at a 5% conversion rate, wrote sales copy, and ran a GTM + SEO strategy from scratch.",
+     skill:"Growth & SEO", label:"FluxGen"},
+    {x:520, y:225, title:"Junior Management Consultant", org:"Brainworks", period:"Jun 2023 – Nov 2024",
+     text:"Research became my weapon of choice: 100+ reports across Ed-Tech, Climate and Health. Designed a training program for a US Ed-Tech firm that lifted SME engagement by 20%.",
+     skill:"Market Research", label:"Brainworks"},
+    {x:635, y:185, title:"Head of Marketing", org:"Engineer, NITK (Annual Tech Fest)", period:"May 2024 – Apr 2025",
+     text:"Led a 20-person marketing team for South India's largest tech fest: 20K+ footfall, a 7-figure sponsorship raised, and 7 lakh+ views in a single month.",
+     skill:"Marketing Leadership", label:"Engineer"},
+    {x:750, y:150, title:"Venture Capital Fellow", org:"VC Lab by Decile Group", period:"Jan 2025 – Apr 2025",
+     text:"Selected from 1,500+ global applicants. Learned fund structuring, LP engagement, deal sourcing and diligence, and talked shop with 10+ global VCs along the way.",
+     skill:"Venture Fundamentals", label:"VC Lab"},
+    {x:865, y:110, title:"Venture Capital Resident", org:"Eudemian Ventures", period:"May 2025 – Jul 2025",
+     text:"Crossed over to the investor side of the table at a Silicon Valley fund. Screened 170+ startup deals, built LP databases, and sharpened how I read a pitch.",
+     skill:"Deal Screening", label:"Eudemian"},
+    {x:980, y:65,  title:"Business & Operations, Founding Team", org:"DAZZL", period:"Nov 2025 – Present",
+     text:"Where I am now. Building DAZZL from the ground up: 0 to 100+ professionals, 0 to 5 hubs, 20K+ users and 4,500+ customers in 3 months. Still very much in progress, and still walking.",
+     skill:"Building 0→1", label:"DAZZL", final:true}
+  ];
+
+  var N = stops.length;
+  var progress = 0;          // 0 .. N-1, position along path
+  var speed = 2.0;           // index-units per second
+  var keys = {left:false, right:false};
+  var visited = new Set();
+  var dialogueOpen = false;
+  var started = false;
+  var lastTime = null;
+  var facing = "right";
+
+  var world = document.getElementById('world');
+  var viewport = document.getElementById('viewport');
+  var character = document.getElementById('character');
+  var nodesLayer = document.getElementById('nodesLayer');
+  var interactHint = document.getElementById('interactHint');
+  var dialogue = document.getElementById('dialogue');
+  var basePath = document.getElementById('basePath');
+  var progressPath = document.getElementById('progressPath');
+  var legL = document.getElementById('legL');
+  var legR = document.getElementById('legR');
+
+  function pathD(list){
+    var d = "M " + list[0].x + " " + list[0].y;
+    for (var i=1;i<list.length;i++){ d += " L " + list[i].x + " " + list[i].y; }
+    return d;
+  }
+  basePath.setAttribute('d', pathD(stops));
+
+  // Build nodes + labels
+  var nodeEls = [];
+  stops.forEach(function(s, i){
+    var n = document.createElement('div');
+    n.className = 'node';
+    n.style.left = s.x + 'px';
+    n.style.top = s.y + 'px';
+    n.addEventListener('click', function(){ progress = i; openDialogue(i); });
+    nodesLayer.appendChild(n);
+    nodeEls.push(n);
+
+    var lbl = document.createElement('div');
+    lbl.className = 'node-label';
+    lbl.style.left = s.x + 'px';
+    lbl.style.top = s.y + 'px';
+    lbl.innerHTML = '<strong>' + s.label + '</strong>' + s.period.split('–')[0].trim();
+    nodesLayer.appendChild(lbl);
+  });
+
+  function lerp(a,b,t){ return a + (b-a)*t; }
+
+  function getPos(p){
+    p = Math.max(0, Math.min(N-1, p));
+    var i0 = Math.floor(p);
+    var i1 = Math.min(i0+1, N-1);
+    var frac = p - i0;
+    return {
+      x: lerp(stops[i0].x, stops[i1].x, frac),
+      y: lerp(stops[i0].y, stops[i1].y, frac)
+    };
+  }
+
+  function updateInventory(){
+    var inv = document.getElementById('invTags');
+    inv.innerHTML = '';
+    stops.forEach(function(s, i){
+      var tag = document.createElement('span');
+      tag.className = 'inv-tag' + (visited.has(i) ? ' unlocked' : '');
+      tag.textContent = visited.has(i) ? ('✓ ' + s.skill) : s.skill;
+      inv.appendChild(tag);
+    });
+    document.getElementById('lvlLabel').textContent = 'Level ' + visited.size + ' / ' + N;
+    document.getElementById('xpFill').style.width = (visited.size / N * 100) + '%';
+  }
+
+  function openDialogue(i){
+    var s = stops[i];
+    visited.add(i);
+    updateInventory();
+    document.getElementById('dlgPeriod').textContent = s.period;
+    document.getElementById('dlgTitle').textContent = s.title;
+    document.getElementById('dlgOrg').textContent = s.org;
+    document.getElementById('dlgText').textContent = s.text;
+    document.getElementById('dlgSkill').textContent = '+ Skill unlocked: ' + s.skill;
+    document.getElementById('dlgCta').style.display = s.final ? 'flex' : 'none';
+    dialogue.classList.add('open');
+    dialogueOpen = true;
+    refreshNodes();
+  }
+
+  function closeDialogue(){
+    dialogue.classList.remove('open');
+    dialogueOpen = false;
+  }
+
+  function refreshNodes(){
+    var nearest = Math.round(progress);
+    var dist = Math.abs(progress - nearest);
+    var inRange = dist < 0.14;
+    stops.forEach(function(s,i){
+      nodeEls[i].classList.toggle('visited', visited.has(i));
+      nodeEls[i].classList.toggle('current-range', inRange && i===nearest && !dialogueOpen);
+    });
+    if (inRange && !dialogueOpen){
+      var pos = getPos(nearest);
+      interactHint.style.left = pos.x + 'px';
+      interactHint.style.top = (pos.y - 38) + 'px';
+      interactHint.style.display = 'block';
+    } else {
+      interactHint.style.display = 'none';
+    }
+  }
+
+  function tryInteract(){
+    if (dialogueOpen || !started) return;
+    var nearest = Math.round(progress);
+    var dist = Math.abs(progress - nearest);
+    if (dist < 0.14){ openDialogue(nearest); }
+  }
+
+  function render(){
+    var pos = getPos(progress);
+    character.style.left = pos.x + 'px';
+    character.style.top = pos.y + 'px';
+    character.classList.toggle('face-left', facing === 'left');
+
+    // progress line up to current position
+    var segs = [];
+    var upto = Math.floor(progress);
+    for (var i=0;i<=upto;i++){ segs.push(stops[i]); }
+    segs.push(pos);
+    progressPath.setAttribute('d', segs.length > 1 ? pathD(segs) : '');
+
+    // camera follow
+    var target = pos.x - viewport.clientWidth/2;
+    target = Math.max(0, Math.min(world.offsetWidth - viewport.clientWidth, target));
+    viewport.scrollLeft = target;
+
+    refreshNodes();
+  }
+
+  var walkAnimToggle = false, walkAnimTimer = 0;
+
+  function loop(t){
+    if (lastTime === null) lastTime = t;
+    var dt = (t - lastTime) / 1000;
+    lastTime = t;
+
+    if (started && !dialogueOpen){
+      var moving = false;
+      if (keys.left){ progress -= speed*dt; facing='left'; moving=true; }
+      if (keys.right){ progress += speed*dt; facing='right'; moving=true; }
+      progress = Math.max(0, Math.min(N-1, progress));
+      character.classList.toggle('walking', moving);
+
+      walkAnimTimer += dt;
+      if (moving && walkAnimTimer > 0.16){
+        walkAnimTimer = 0;
+        walkAnimToggle = !walkAnimToggle;
+        legL.setAttribute('x2', walkAnimToggle ? '5' : '9');
+        legR.setAttribute('x2', walkAnimToggle ? '23' : '19');
+      }
+    }
+    render();
+    requestAnimationFrame(loop);
+  }
+
+  // Keyboard
+  document.addEventListener('keydown', function(e){
+    if (['ArrowLeft','ArrowRight','ArrowUp','ArrowDown',' '].indexOf(e.key) > -1){ e.preventDefault(); }
+    if (!started) return;
+    if (e.key === 'ArrowLeft') keys.left = true;
+    if (e.key === 'ArrowRight') keys.right = true;
+    if (e.key === 'ArrowUp' || e.key === ' ' || e.key === 'Enter'){
+      if (dialogueOpen) closeDialogue(); else tryInteract();
+    }
+    if (e.key === 'ArrowDown' || e.key === 'Escape'){ closeDialogue(); }
+  });
+  document.addEventListener('keyup', function(e){
+    if (e.key === 'ArrowLeft') keys.left = false;
+    if (e.key === 'ArrowRight') keys.right = false;
+  });
+
+  // Touch / click pad
+  function bindHold(el, onDown, onUp){
+    el.addEventListener('pointerdown', onDown);
+    el.addEventListener('pointerup', onUp);
+    el.addEventListener('pointerleave', onUp);
+    el.addEventListener('pointercancel', onUp);
+  }
+  bindHold(document.getElementById('btnLeft'),
+    function(){ keys.left = true; }, function(){ keys.left = false; });
+  bindHold(document.getElementById('btnRight'),
+    function(){ keys.right = true; }, function(){ keys.right = false; });
+  document.getElementById('btnInteract').addEventListener('click', function(){
+    if (dialogueOpen) closeDialogue(); else tryInteract();
+  });
+
+  // Start overlay
+  document.getElementById('startBtn').addEventListener('click', startGame);
+  function startGame(){
+    if (started) return;
+    started = true;
+    document.getElementById('startOverlay').classList.add('hidden');
+  }
+
+  updateInventory();
+  requestAnimationFrame(loop);
+})();
+</script>
+
+</body>
+</html>
